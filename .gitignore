@@ -1,0 +1,6 @@
+__pycache__
+*.sh
+*/env/*
+*.out
+config.py
+.DS_Store
