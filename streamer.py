@@ -21,17 +21,18 @@ class StdOutListener(tweepy.StreamListener):
     def on_data(self, data):
         tweet = json.loads(data)
         if 'retweeted_status' in tweet:
-            tweet_cnt = self._mongo._collection.find({"retweeted_status.id_str": tweet['retweeted_status']['id_str']}).count()
-            if tweet_cnt:
-                self._mongo._collection.update_many({"retweeted_status.id_str": tweet['retweeted_status']['id_str']},
-                                                    {'$set': {"retweeted_status.favorite_count": tweet['retweeted_status']['favorite_count']}})
-                self._mongo._collection.update_many({"retweeted_status.id_str": tweet['retweeted_status']['id_str']},
-                                                    {'$set': {"retweeted_status.retweet_count": tweet['retweeted_status']['retweet_count']}})
-                return True
+            #tweet_cnt = self._mongo._collection.find({"retweeted_status.id_str": tweet['retweeted_status']['id_str']}).count()
+            #if tweet_cnt:
+            #    self._mongo._collection.update_many({"retweeted_status.id_str": tweet['retweeted_status']['id_str']},
+            #                                        {'$set': {"retweeted_status.favorite_count": tweet['retweeted_status']['favorite_count']}})
+            #    self._mongo._collection.update_many({"retweeted_status.id_str": tweet['retweeted_status']['id_str']},
+            #                                        {'$set': {"retweeted_status.retweet_count": tweet['retweeted_status']['retweet_count']}})
+            #    return True
             tcreated = datetime.datetime.strptime(tweet['retweeted_status']['created_at'], '%a %b %d %H:%M:%S %z %Y').replace(tzinfo=None)
-            tweet['retweeted_status']['created_at'] = tcreated
-            if u'ة' not in tweet['retweeted_status']['text'] and u'أ' not in tweet['retweeted_status']['text'] and not tweet['retweeted_status']['retweeted'] and tweet['retweeted_status']['user']['screen_name'] not in self._blacklist:
-                self._mongo.insert(tweet)
+            if tcreated - datetime.datetime.utcnow() <= datetime.timedelta(seconds=60 * 60 * 24):
+                tweet['retweeted_status']['created_at'] = tcreated
+                if u'ة' not in tweet['retweeted_status']['text'] and u'أ' not in tweet['retweeted_status']['text'] and not tweet['retweeted_status']['retweeted'] and tweet['retweeted_status']['user']['screen_name'] not in self._blacklist:
+                    self._mongo.insert(tweet)
         return True
 
     def on_error(self, status):

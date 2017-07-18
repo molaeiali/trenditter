@@ -20,7 +20,7 @@ def sendToTelegram(tweet, desc=""):
 
     text += re.sub("_", "ـ", pre)
 
-    text += u'[لینک به توییت](' + 'https://twitter.com/' + tweet['retweeted_status']['user']['screen_name'] + '/status/' + tweet['retweeted_status']['id_str'] + u')'
+    text += u'\n\n[لینک به توییت](' + 'https://twitter.com/' + tweet['retweeted_status']['user']['screen_name'] + '/status/' + tweet['retweeted_status']['id_str'] + u')'
 
     text += u'\n[@' + tweet['retweeted_status']['user']['screen_name'] + u']'
     text += u'(https://twitter.com/' + tweet['retweeted_status']['user']['screen_name'] + u')'
@@ -38,12 +38,18 @@ LastTweetToCheck = datetime.datetime.utcnow() - datetime.timedelta(seconds=check
 findQuery = {"retweeted_status.created_at": {'$gte': LastTweetToCheck}, "retweeted_status.retweeted": {'$ne': True}}
 finderCursor = mongo._collection.find(findQuery).sort('retweeted_status.favorite_count', pymongo.DESCENDING)
 for tweet in finderCursor:
+    realStatus = api.get_status(tweet['retweeted_status']['id_str'])
+    if realStatus.retweeted:
+        continue
     if maxLikes is None:
         maxLikes = tweet.copy()
         break
 
 finderCursor = mongo._collection.find(findQuery).sort('retweeted_status.retweet_count', pymongo.DESCENDING)
 for tweet in finderCursor:
+    realStatus = api.get_status(tweet['retweeted_status']['id_str'])
+    if realStatus.retweeted:
+        continue
     if maxRetweets is None:
         maxRetweets = tweet.copy()
         break
