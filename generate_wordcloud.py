@@ -73,3 +73,4 @@ telegram_bot = telegram.Bot(token=telegram_bot_token)
 
 api.update_with_media(path.join(d, output_name), u'توییتر به روایت تصویر :))))))')
 telegram_bot.send_photo(chat_id="@trenditter", photo=open(path.join(d, output_name), 'rb'), caption=u'توییتر به روایت تصویر :)')
+telegram_bot.send_photo(chat_id=admin_id, photo=open(path.join(d, output_name), 'rb'), caption=u'توییتر به روایت تصویر ایناهاش!')
