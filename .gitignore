@@ -4,3 +4,9 @@ __pycache__
 *.out
 config.py
 .DS_Store
+generate_wordcloud_old.py
+generate_wordcloud_older.py
+removeSpams.py
+removeTweets.py
+test.png
+text.py
