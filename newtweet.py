@@ -6,11 +6,28 @@ import time
 import pymongo
 from mongoHandler import MongoHandler
 from config import *
+import re
+import traceback
 
 auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
 auth.set_access_token(access_token, access_token_secret)
 api = tweepy.API(auth)
 telegram_bot = telegram.Bot(token=telegram_bot_token)
+
+def sendToTelegram(tweet, desc=""):
+    text = desc
+    pre = ' '.join(re.sub("(@[A-Za-z0-9_]+)|(?:\@|https?\://)\S+"," ",tweet['retweeted_status']['text']).split())
+
+    text += re.sub("_", "ـ", pre)
+
+    text += u'[لینک به توییت](' + 'https://twitter.com/' + tweet['retweeted_status']['user']['screen_name'] + '/status/' + tweet['retweeted_status']['id_str'] + u')'
+
+    text += u'\n[@' + tweet['retweeted_status']['user']['screen_name'] + u']'
+    text += u'(https://twitter.com/' + tweet['retweeted_status']['user']['screen_name'] + u')'
+
+    telegram_bot.sendMessage(chat_id="@trenditter", text=text, parse_mode=telegram.ParseMode.MARKDOWN)
+
+
 
 maxLikes = None
 maxRetweets = None
@@ -31,42 +48,47 @@ for tweet in finderCursor:
         maxRetweets = tweet.copy()
         break
 
-# print(maxLikes)
+try:
+    if maxLikes['retweeted_status']['id_str'] == maxRetweets['retweeted_status']['id_str']:
+        desc = u'این توییت با ' + str(maxLikes['retweeted_status']['favorite_count'])
+        desc += u' لایک و ' + str(maxLikes['retweeted_status']['retweet_count']) + u' ریتوییت '
+        desc += u'بیشترین لایک و ریتوییت ۱ساعت گذشته را داشته! ✌️🤘🏻\n\n'
 
-# mongo._collection.delete_one({'retweeted_status.id_str': maxLikes['retweeted_status']['id_str']})
-# mongo._collection.delete_one({'retweeted_status.id_str': maxRetweets['retweeted_status']['id_str']})
-maxLikes['retweeted_status']['retweeted'] = True
-maxRetweets['retweeted_status']['retweeted'] = True
-mongo._collection.update_many({"retweeted_status.id_str": maxLikes['retweeted_status']['id_str']},
-                              {'$set': {'retweeted_status.retweeted': True}})
-mongo._collection.update_many({"retweeted_status.id_str": maxRetweets['retweeted_status']['id_str']},
-                              {'$set': {'retweeted_status.retweeted': True}})
+        api.retweet(maxLikes['retweeted_status']['id_str'])
+        mongo._collection.update_many({"retweeted_status.id_str": maxLikes['retweeted_status']['id_str']},
+                                      {'$set': {'retweeted_status.retweeted': True}})
+        sendToTelegram(maxLikes, desc)
+        telegram_bot.sendMessage(chat_id=admin_id, text="لایک‌ها و ریتوییت‌ها ریتوییت شد :)")
+    else:
+        likesDesc = u'این توییت با ' + str(maxLikes['retweeted_status']['favorite_count'])
+        likesDesc += u' لایک '
+        likesDesc += u'بیشترین لایک ۱ساعت گذشته را داشته! ✌️🤘🏻\n\n'
 
-if maxLikes['retweeted_status']['id_str'] == maxRetweets['retweeted_status']['id_str']:
-    maxLikesAndRetweetsText = u'این توییت از @' + maxLikes['retweeted_status']['user']['screen_name'] + u' بیشترین لایک و ریتوییت در 3ساعت گذشته را داشته!\n'
-    maxLikesAndRetweetsText += 'https://twitter.com/' + maxLikes['retweeted_status']['user']['screen_name'] + '/status/' + maxLikes['retweeted_status']['id_str']
+        api.retweet(maxLikes['retweeted_status']['id_str'])
+        mongo._collection.update_many({"retweeted_status.id_str": maxLikes['retweeted_status']['id_str']},
+                                      {'$set': {'retweeted_status.retweeted': True}})
+        sendToTelegram(maxLikes, likesDesc)
 
-    api.update_status(maxLikesAndRetweetsText)
-    api.retweet(maxLikes['retweeted_status']['id_str'])
-    telegram_bot.sendMessage(chat_id="@trenditter", text=maxLikesAndRetweetsText)
-else:
-    maxLikesText = u'این توییت از @' + maxLikes['retweeted_status']['user']['screen_name'] + u' با ' + str(maxLikes['retweeted_status']['favorite_count'])  + ' لایک بیشترین لایک رو در ۳ساعت اخیر داشته!\n'
-    maxLikesText += 'https://twitter.com/' + maxLikes['retweeted_status']['user']['screen_name'] + '/status/' + maxLikes['retweeted_status']['id_str']
+        print('maxLikesText tweeted!')
+        telegram_bot.sendMessage(chat_id=admin_id, text="لایک‌ها ریتوییت شد :)")
 
-    maxRetweetsText = u'این توییت از @' + maxRetweets['retweeted_status']['user']['screen_name'] + u' با ' + str(maxRetweets['retweeted_status']['retweet_count']) +  u' ریتوییت بیشترین ریتوییت رو در ۳ساعت اخیر داشته!\n'
-    maxRetweetsText += 'https://twitter.com/' + maxRetweets['retweeted_status']['user']['screen_name'] + '/status/' + maxRetweets['retweeted_status']['id_str']
+        retweetsDesc = u'این توییت با '
+        retweetsDesc += str(maxLikes['retweeted_status']['retweet_count']) + u' ریتوییت '
+        retweetsDesc += u'بیشترین ریتوییت ۱ساعت گذشته را داشته! ✌️🤘🏻\n\n'
 
-    api.update_status(maxLikesText)
-    api.retweet(maxLikes['retweeted_status']['id_str'])
-    telegram_bot.sendMessage(chat_id="@trenditter", text=maxLikesText)
+        api.retweet(maxRetweets['retweeted_status']['id_str'])
+        mongo._collection.update_many({"retweeted_status.id_str": maxRetweets['retweeted_status']['id_str']},
+                                      {'$set': {'retweeted_status.retweeted': True}})
+        sendToTelegram(maxRetweets, retweetsDesc)
 
-    print('maxLikesText tweeted!')
+        print('maxRetweetsText tweeted!')
+        telegram_bot.sendMessage(chat_id=admin_id, text="ریتوییت‌ها هم ریتوییت شد :)")
 
-    api.update_status(maxRetweetsText)
-    api.retweet(maxRetweets['retweeted_status']['id_str'])
-    telegram_bot.sendMessage(chat_id="@trenditter", text=maxRetweetsText)
-
-    print('maxRetweetsText tweeted!')
+except Exception as e:
+    telegram_bot.sendMessage(chat_id=admin_id, text="الان مشکلی پیش‌اومده!")
+    telegram_bot.sendMessage(chat_id=admin_id, text=str(traceback.format_exc()))
+    telegram_bot.sendMessage(chat_id=admin_id, text=str(maxLikes['_id']))
+    telegram_bot.sendMessage(chat_id=admin_id, text=str(maxRetweets['_id']))
 
 
 print("likes:")
