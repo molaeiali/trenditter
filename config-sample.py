@@ -14,3 +14,6 @@ wordCloudTimeout = 6 * tweetAfter
 mongo_connString = ''
 mongo_db = ''
 mongo_collection = ''
+
+# telegram admin id
+admin_id = ''
