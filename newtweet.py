@@ -18,6 +18,7 @@ def sendToTelegram(tweet, desc=""):
     text = desc
     pre = ' '.join(re.sub("(@[A-Za-z0-9_]+)|(?:\@|https?\://)\S+"," ",tweet['retweeted_status']['text']).split())
 
+    text += tweet['retweeted_status']['user']['name'] + u":\n"
     text += re.sub("_", "ـ", pre) + '\n\n'
 
     text += u'[لینک به توییت](' + 'https://twitter.com/' + tweet['retweeted_status']['user']['screen_name'] + '/status/' + tweet['retweeted_status']['id_str'] + u')'
