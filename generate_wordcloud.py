@@ -95,7 +95,7 @@ print("finished")
 twitter_mask = np.array(Image.open(path.join(d, "twitter_mask.png")))
 
 # generating wordcloud
-wc = PersianWordCloud(only_persian=True, regexp=r"\w+[*]*\w+", font_step=3, font_path=path.join(d, "IRANSans.ttf"), background_color="white", max_words=1000, mask=twitter_mask,
+wc = PersianWordCloud(only_persian=True, regexp=r"\w+[*]*\w+", font_step=3, font_path=path.join(d, "IRANSans.ttf"), background_color="white", max_words=800, mask=twitter_mask,
             stopwords=stopwords)
 wc.generate(text)
 
