@@ -20,11 +20,42 @@ def convert(text):
 def is_perisan(s):
         return u'\u0600' <= s <= u'\u06FF'
 
+
+# generating stopwords
+STOPWORDS.add('می')
+STOPWORDS.add('ای')
+STOPWORDS.add('یه')
+STOPWORDS.add('سر')
+STOPWORDS.add('کن')
+STOPWORDS.add('رو')
+STOPWORDS.add('من')
+STOPWORDS.add('تر')
+STOPWORDS.add('اگه')
+STOPWORDS.add('کنم')
+STOPWORDS.add('کنه')
+STOPWORDS.add('پر')
+STOPWORDS.add('لا')
+STOPWORDS.add('فی')
+STOPWORDS.add('چی')
+STOPWORDS.add('تو')
+STOPWORDS.add('فک')
+STOPWORDS.add('الان')
+STOPWORDS.add('اون')
+STOPWORDS.add('کردن')
+STOPWORDS.add('نمی')
+STOPWORDS.add('های')
+stopwords = set(STOPWORDS)
+stopwords_list = open(path.join(d, 'blacklist.txt')).read()
+for word in stopwords_list.split():
+    stopwords.add(convert(word))
+    stopwords.add(word)
+
 mongo = MongoHandler(mongo_connString, mongo_db, mongo_collection)
 LastTweetToCheck = datetime.datetime.utcnow() - datetime.timedelta(seconds=wordCloudTimeout)
 findQuery = {"retweeted_status.created_at": {'$gte': LastTweetToCheck}}
 finderCursor = mongo._collection.find(findQuery)
 print(finderCursor.count())
+tweet_cnt = finderCursor.count()
 
 all_words = []
 # Read the whole text.
@@ -33,25 +64,20 @@ for tweet in finderCursor:
     txt_formated = u""
     for word in txt:
         if is_perisan(word):
+            if word in stopwords:
+                continue
             words = ''
             words += ' ' + word
             all_words.append(words)
 
-text = ''.join(all_words)
+text = ' '.join(all_words)
 print("finished")
-
-# generating stopwords
-stopwords = set(STOPWORDS)
-stopwords_list = open(path.join(d, 'blacklist.txt')).read()
-for word in stopwords_list.split():
-    stopwords.add(convert(word))
-    stopwords.add(word)
 
 # loading the mask
 twitter_mask = np.array(Image.open(path.join(d, "twitter_mask.png")))
 
 # generating wordcloud
-wc = PersianWordCloud(only_persian=True, font_path=path.join(d, "IRANSans.ttf"), background_color="white", max_words=1500, mask=twitter_mask,
+wc = PersianWordCloud(only_persian=True, font_path=path.join(d, "IRANSans.ttf"), background_color="white", max_words=1000, mask=twitter_mask,
             stopwords=stopwords)
 wc.generate(text)
 
@@ -71,6 +97,6 @@ auth.set_access_token(access_token, access_token_secret)
 api = tweepy.API(auth)
 telegram_bot = telegram.Bot(token=telegram_bot_token)
 
-api.update_with_media(path.join(d, output_name), u'توییتر به روایت تصویر :))))))')
-telegram_bot.send_photo(chat_id="@trenditter", photo=open(path.join(d, output_name), 'rb'), caption=u'توییتر به روایت تصویر :)')
+api.update_with_media(path.join(d, output_name), u'توییتر به روایت تصویر پس از پردازش ' + str(tweet_cnt) + u' توییت!')
+telegram_bot.send_photo(chat_id="@trenditter", photo=open(path.join(d, output_name), 'rb'), caption=u'توییتر به روایت تصویر پس از پردازش ' + str(tweet_cnt) + u' توییت!')
 telegram_bot.send_photo(chat_id=admin_id, photo=open(path.join(d, output_name), 'rb'), caption=u'توییتر به روایت تصویر ایناهاش!')
