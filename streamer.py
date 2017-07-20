@@ -20,7 +20,7 @@ class StdOutListener(tweepy.StreamListener):
 
     def on_data(self, data):
         tweet = json.loads(data)
-        if 'retweeted_status' in tweet:
+        #if 'retweeted_status' in tweet:
             #tweet_cnt = self._mongo._collection.find({"retweeted_status.id_str": tweet['retweeted_status']['id_str']}).count()
             #if tweet_cnt:
             #    self._mongo._collection.update_many({"retweeted_status.id_str": tweet['retweeted_status']['id_str']},
@@ -28,11 +28,19 @@ class StdOutListener(tweepy.StreamListener):
             #    self._mongo._collection.update_many({"retweeted_status.id_str": tweet['retweeted_status']['id_str']},
             #                                        {'$set': {"retweeted_status.retweet_count": tweet['retweeted_status']['retweet_count']}})
             #    return True
+        if 'retweeted_status' in tweet:
             tcreated = datetime.datetime.strptime(tweet['retweeted_status']['created_at'], '%a %b %d %H:%M:%S %z %Y').replace(tzinfo=None)
-            if tcreated - datetime.datetime.utcnow() <= datetime.timedelta(seconds=60 * 60 * 24):
-                tweet['retweeted_status']['created_at'] = tcreated
-                if u'ة' not in tweet['retweeted_status']['text'] and u'أ' not in tweet['retweeted_status']['text'] and not tweet['retweeted_status']['retweeted'] and tweet['retweeted_status']['user']['screen_name'] not in self._blacklist:
-                    self._mongo.insert(tweet)
+            tweet['retweeted_status']['created_at'] = tcreated
+            tweet_text = tweet['retweeted_status']['text']
+            sender = tweet['retweeted_status']['user']['screen_name']
+        else:
+            tcreated = datetime.datetime.strptime(tweet['created_at'], '%a %b %d %H:%M:%S %z %Y').replace(tzinfo=None)
+            tweet['created_at'] = tcreated
+            tweet_text = tweet['text']
+            sender = tweet['user']['screen_name']
+
+        if u'ة' not in tweet_text and u'أ' not in tweet_text and sender not in self._blacklist:
+            self._mongo.insert(tweet)
         return True
 
     def on_error(self, status):
