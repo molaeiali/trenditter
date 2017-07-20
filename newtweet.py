@@ -18,9 +18,9 @@ def sendToTelegram(tweet, desc=""):
     text = desc
     pre = ' '.join(re.sub("(@[A-Za-z0-9_]+)|(?:\@|https?\://)\S+"," ",tweet['retweeted_status']['text']).split())
 
-    text += re.sub("_", "ـ", pre)
+    text += re.sub("_", "ـ", pre) + '\n\n'
 
-    text += u'\n\n[لینک به توییت](' + 'https://twitter.com/' + tweet['retweeted_status']['user']['screen_name'] + '/status/' + tweet['retweeted_status']['id_str'] + u')'
+    text += u'[لینک به توییت](' + 'https://twitter.com/' + tweet['retweeted_status']['user']['screen_name'] + '/status/' + tweet['retweeted_status']['id_str'] + u')'
 
     text += u'\n[@' + tweet['retweeted_status']['user']['screen_name'] + u']'
     text += u'(https://twitter.com/' + tweet['retweeted_status']['user']['screen_name'] + u')'
@@ -43,6 +43,7 @@ for tweet in finderCursor:
         continue
     if maxLikes is None:
         maxLikes = tweet.copy()
+#        maxLikes['retweeted_status']['favorite_count'] = realStatus.retweeted_status.favorite_count
         break
 
 finderCursor = mongo._collection.find(findQuery).sort('retweeted_status.retweet_count', pymongo.DESCENDING)
@@ -52,6 +53,7 @@ for tweet in finderCursor:
         continue
     if maxRetweets is None:
         maxRetweets = tweet.copy()
+#        maxRetweets['retweeted_status']['retweet_count'] = realStatus.retweeted_status.retweet_count
         break
 
 try:
@@ -79,7 +81,7 @@ try:
         telegram_bot.sendMessage(chat_id=admin_id, text="لایک‌ها ریتوییت شد :)")
 
         retweetsDesc = u'این توییت با '
-        retweetsDesc += str(maxLikes['retweeted_status']['retweet_count']) + u' ریتوییت '
+        retweetsDesc += str(maxRetweets['retweeted_status']['retweet_count']) + u' ریتوییت '
         retweetsDesc += u'بیشترین ریتوییت ۱ساعت گذشته را داشته! ✌️🤘🏻\n\n'
 
         api.retweet(maxRetweets['retweeted_status']['id_str'])
