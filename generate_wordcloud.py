@@ -60,7 +60,10 @@ tweet_cnt = finderCursor.count()
 all_words = []
 # Read the whole text.
 for tweet in finderCursor:
-    txt = tweet['retweeted_status']['text'].split()
+    if 'retweeted_status' in tweet:
+        txt = tweet['retweeted_status']['text'].split()
+    else:
+        txt = tweet['text']
     txt_formated = u""
     for word in txt:
         if is_perisan(word):
