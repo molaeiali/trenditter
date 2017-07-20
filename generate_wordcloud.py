@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 from os import path
 from PIL import Image
 import numpy as np
@@ -8,8 +9,24 @@ from config import *
 from persian_wordcloud.wordcloud import STOPWORDS, PersianWordCloud
 import arabic_reshaper
 from bidi.algorithm import get_display
+from hazm import *
 
 d = path.dirname(__file__)
+
+tagger = POSTagger(model=path.join(d, 'resources/postagger.model'))
+TypeBlacklist = [
+    'PRO',
+    'V',
+    'ADV',
+    'AJ',
+    'CONJ',
+    'PUNC',
+    'RES',
+    'AJe',
+    'Ne',
+    'P',
+    'POSTP'
+]
 
 # convert rtl words like Arabic and Farsi to some showable form
 def convert(text):
@@ -61,26 +78,24 @@ all_words = []
 # Read the whole text.
 for tweet in finderCursor:
     if 'retweeted_status' in tweet:
-        txt = tweet['retweeted_status']['text'].split()
+        txt = tweet['retweeted_status']['text']
     else:
         txt = tweet['text']
-    txt_formated = u""
+    txt = tagger.tag(word_tokenize(txt))
     for word in txt:
-        if is_perisan(word):
-            if word in stopwords:
+        if is_perisan(word[0]):
+            if word[1] in TypeBlacklist or word[0] in stopwords:
                 continue
-            words = ''
-            words += ' ' + word
-            all_words.append(words)
+            all_words.append(word[0])
 
-text = ' '.join(all_words)
+text = '\n'.join(all_words)
 print("finished")
 
 # loading the mask
 twitter_mask = np.array(Image.open(path.join(d, "twitter_mask.png")))
 
 # generating wordcloud
-wc = PersianWordCloud(only_persian=True, font_path=path.join(d, "IRANSans.ttf"), background_color="white", max_words=1000, mask=twitter_mask,
+wc = PersianWordCloud(only_persian=True, regexp=r"\w+[*]*\w+", font_step=3, font_path=path.join(d, "IRANSans.ttf"), background_color="white", max_words=1000, mask=twitter_mask,
             stopwords=stopwords)
 wc.generate(text)
 
@@ -102,4 +117,5 @@ telegram_bot = telegram.Bot(token=telegram_bot_token)
 
 api.update_with_media(path.join(d, output_name), u'توییتر به روایت تصویر پس از پردازش ' + str(tweet_cnt) + u' توییت!')
 telegram_bot.send_photo(chat_id="@trenditter", photo=open(path.join(d, output_name), 'rb'), caption=u'توییتر به روایت تصویر پس از پردازش ' + str(tweet_cnt) + u' توییت!')
-telegram_bot.send_photo(chat_id=admin_id, photo=open(path.join(d, output_name), 'rb'), caption=u'توییتر به روایت تصویر ایناهاش!')
+
+telegram_bot.send_photo(chat_id=admin_id, photo=open(path.join(d, output_name), 'rb'), caption=u'توییتر به روایت تصویر پس از پردازش ' + str(tweet_cnt) + u' توییت!')
