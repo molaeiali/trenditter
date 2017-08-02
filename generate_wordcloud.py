@@ -10,10 +10,14 @@ from persian_wordcloud.wordcloud import STOPWORDS, PersianWordCloud
 import arabic_reshaper
 from bidi.algorithm import get_display
 from hazm import *
+from utils import *
 
 d = path.dirname(__file__)
 
 tagger = POSTagger(model=path.join(d, 'resources/postagger.model'))
+chunker = Chunker(model=path.join(d, 'resources/chunker.model'))
+
+
 TypeBlacklist = [
     'PRO',
     'V',
@@ -25,7 +29,8 @@ TypeBlacklist = [
     'AJe',
     'Ne',
     'P',
-    'POSTP'
+    'POSTP',
+    'ADJP'
 ]
 
 # convert rtl words like Arabic and Farsi to some showable form
@@ -75,27 +80,50 @@ print(finderCursor.count())
 tweet_cnt = finderCursor.count()
 
 all_words = []
+checked = {}
 # Read the whole text.
 for tweet in finderCursor:
     if 'retweeted_status' in tweet:
+        tweet_id = tweet['retweeted_status']['id_str']
         txt = tweet['retweeted_status']['text']
+        if tweet['retweeted_status']['id_str'] not in checked:
+            checked[tweet_id] = 0
     else:
+        tweet_id = tweet['id_str']
         txt = tweet['text']
-    txt = tagger.tag(word_tokenize(txt))
-    for word in txt:
-        if is_perisan(word[0]):
-            if word[1] in TypeBlacklist or word[0] in stopwords:
-                continue
-            all_words.append(word[0])
+        if tweet['id_str'] not in checked:
+            checked[tweet_id] = 0
+
+    if checked[tweet_id] % 10 != 0:
+        continue
+    tagged_txt = tagger.tag(word_tokenize(txt))
+    phrase_list = tree2list(chunker.parse(tagged_txt))
+    # print(phrase_list)
+    for phrase in phrase_list:
+        if phrase[1] is TypeBlacklist:
+            continue
+        final_word = ''
+        for word in phrase[0].split():
+            if is_perisan(word):
+                if word not in stopwords:
+                    try:
+                        convert(' ' + word)
+                        # all_words.append(word)
+                        final_word += word + u'‌'
+                    except:
+                        print("e")
+        all_words.append( normalize(final_word) )
 
 text = '\n'.join(all_words)
+#print(text)
+#text = ' '.join(all_words)
 print("finished")
 
 # loading the mask
 twitter_mask = np.array(Image.open(path.join(d, "twitter_mask.png")))
 
 # generating wordcloud
-wc = PersianWordCloud(only_persian=True, regexp=r"\w+[*]*\w+", font_step=3, font_path=path.join(d, "IRANSans.ttf"), background_color="white", max_words=800, mask=twitter_mask,
+wc = PersianWordCloud(only_persian=True, regexp=r".*\w+.*", font_step=3, font_path=path.join(d, "IRANSans.ttf"), background_color="white", max_words=800, mask=twitter_mask,
             stopwords=stopwords)
 wc.generate(text)
 
@@ -116,6 +144,8 @@ api = tweepy.API(auth)
 telegram_bot = telegram.Bot(token=telegram_bot_token)
 
 api.update_with_media(path.join(d, output_name), u'توییتر به روایت تصویر پس از پردازش ' + str(tweet_cnt) + u' توییت!')
-telegram_bot.send_photo(chat_id="@trenditter", photo=open(path.join(d, output_name), 'rb'), caption=u'توییتر به روایت تصویر پس از پردازش ' + str(tweet_cnt) + u' توییت!')
+wctg = telegram_bot.send_photo(chat_id="@trenditter", photo=open(path.join(d, output_name), 'rb'), caption=u'توییتر به روایت تصویر پس از پردازش ' + str(tweet_cnt) + u' توییت!')
 
-telegram_bot.send_photo(chat_id=admin_id, photo=open(path.join(d, output_name), 'rb'), caption=u'توییتر به روایت تصویر پس از پردازش ' + str(tweet_cnt) + u' توییت!')
+telegram_bot.forwardMessage(chat_id="322219318", from_chat_id="@trenditter", message_id=wctg.message_id)
+
+#telegram_bot.send_photo(chat_id=admin_id, photo=open(path.join(d, output_name), 'rb'), caption=u'توییتر به روایت تصویر پس از پردازش ' + str(tweet_cnt) + u' توییت!')

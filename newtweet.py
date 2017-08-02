@@ -26,7 +26,9 @@ def sendToTelegram(tweet, desc=""):
     text += u'\n[@' + tweet['retweeted_status']['user']['screen_name'] + u']'
     text += u'(https://twitter.com/' + tweet['retweeted_status']['user']['screen_name'] + u')'
 
-    telegram_bot.sendMessage(chat_id="@trenditter", text=text, parse_mode=telegram.ParseMode.MARKDOWN)
+    ret = telegram_bot.sendMessage(chat_id="@trenditter", text=text, parse_mode=telegram.ParseMode.MARKDOWN)
+
+    return ret
 
 
 
@@ -76,10 +78,10 @@ try:
         api.retweet(maxLikes['retweeted_status']['id_str'])
         mongo._collection.update_many({"retweeted_status.id_str": maxLikes['retweeted_status']['id_str']},
                                       {'$set': {'retweeted_status.retweeted': True}})
-        sendToTelegram(maxLikes, likesDesc)
+        maxLikesTG = sendToTelegram(maxLikes, likesDesc)
 
         print('maxLikesText tweeted!')
-        telegram_bot.sendMessage(chat_id=admin_id, text="لایک‌ها ریتوییت شد :)")
+        telegram_bot.forwardMessage(chat_id=admin_id, from_chat_id="@trenditter", message_id=maxLikesTG.message_id)
 
         retweetsDesc = u'این توییت با '
         retweetsDesc += str(maxRetweets['retweeted_status']['retweet_count']) + u' ریتوییت '
@@ -88,10 +90,10 @@ try:
         api.retweet(maxRetweets['retweeted_status']['id_str'])
         mongo._collection.update_many({"retweeted_status.id_str": maxRetweets['retweeted_status']['id_str']},
                                       {'$set': {'retweeted_status.retweeted': True}})
-        sendToTelegram(maxRetweets, retweetsDesc)
+        maxRtTG = sendToTelegram(maxRetweets, retweetsDesc)
 
         print('maxRetweetsText tweeted!')
-        telegram_bot.sendMessage(chat_id=admin_id, text="ریتوییت‌ها هم ریتوییت شد :)")
+        telegram_bot.forwardMessage(chat_id=admin_id, from_chat_id="@trenditter", message_id=maxRtTG.message_id)
 
 except Exception as e:
     telegram_bot.sendMessage(chat_id=admin_id, text="الان مشکلی پیش‌اومده!")
