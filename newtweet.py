@@ -15,7 +15,7 @@ api = tweepy.API(auth)
 telegram_bot = telegram.Bot(token=telegram_bot_token)
 
 def sendToTelegram(tweet, desc=""):
-    text = desc
+    text = ''
     pre = ' '.join(re.sub("(@[A-Za-z0-9_]+)|(?:\@|https?\://)\S+"," ",tweet['retweeted_status']['text']).split())
 
     text += tweet['retweeted_status']['user']['name'] + u":\n"
@@ -24,7 +24,9 @@ def sendToTelegram(tweet, desc=""):
     text += u'[لینک به توییت](' + 'https://twitter.com/' + tweet['retweeted_status']['user']['screen_name'] + '/status/' + tweet['retweeted_status']['id_str'] + u')'
 
     text += u'\n[@' + tweet['retweeted_status']['user']['screen_name'] + u']'
-    text += u'(https://twitter.com/' + tweet['retweeted_status']['user']['screen_name'] + u')'
+    text += u'(https://twitter.com/' + tweet['retweeted_status']['user']['screen_name'] + u')' + '\n\n'
+
+    text += desc + ''
 
     ret = telegram_bot.sendMessage(chat_id="@trenditter", text=text, parse_mode=telegram.ParseMode.MARKDOWN)
 
