@@ -14,6 +14,21 @@ auth.set_access_token(access_token, access_token_secret)
 api = tweepy.API(auth)
 telegram_bot = telegram.Bot(token=telegram_bot_token)
 
+def persianNumbersAndLetters(str):
+    str = str.replace('1','۱')
+    str = str.replace('2','۲')
+    str = str.replace('3','۳')
+    str = str.replace('4','۴')
+    str = str.replace('5','۵')
+    str = str.replace('6','۶')
+    str = str.replace('7','۷')
+    str = str.replace('8','۸')
+    str = str.replace('9','۹')
+    str = str.replace('0','۰')
+    str = str.replace('ك','ک')
+    str = str.replace('ي','ی')
+    return str
+
 def sendToTelegram(tweet, desc=""):
     text = ''
     pre = ' '.join(re.sub("(@[A-Za-z0-9_]+)|(?:\@|https?\://)\S+"," ",tweet['retweeted_status']['text']).split())
@@ -27,6 +42,8 @@ def sendToTelegram(tweet, desc=""):
     text += u'(https://twitter.com/' + tweet['retweeted_status']['user']['screen_name'] + u')' + '\n\n'
 
     text += desc + ''
+
+    text = persianNumbersAndLetters(text)
 
     ret = telegram_bot.sendMessage(chat_id="@trenditter", text=text, parse_mode=telegram.ParseMode.MARKDOWN)
 
