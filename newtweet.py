@@ -36,12 +36,13 @@ def sendToTelegram(tweet, desc=""):
     text += tweet['retweeted_status']['user']['name'] + u":\n"
     text += persianNumbersAndLetters(re.sub("_", "ـ", pre)) + '\n\n'
 
+    text += persianNumbersAndLetters(desc) + '\n\n'
+
     text += u'[لینک به توییت](' + 'https://twitter.com/' + tweet['retweeted_status']['user']['screen_name'] + '/status/' + tweet['retweeted_status']['id_str'] + u')'
 
     text += u'\n[@' + tweet['retweeted_status']['user']['screen_name'] + u']'
-    text += u'(https://twitter.com/' + tweet['retweeted_status']['user']['screen_name'] + u')' + '\n\n'
+    text += u'(https://twitter.com/' + tweet['retweeted_status']['user']['screen_name'] + u')'
 
-    text += persianNumbersAndLetters(desc) + ''
 
     ret = telegram_bot.sendMessage(chat_id="@trenditter", text=text, parse_mode=telegram.ParseMode.MARKDOWN)
 
